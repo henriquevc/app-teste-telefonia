@@ -9,10 +9,11 @@
                     <div class="flex items-center space-x-4 justify-between">
                         <ag-input v-model="host" type="url" :disabled="conectado" placeholder="Digite o host" class="w-full" id="host"/>
                         <ag-button v-if="!conectado" label="Conectar" @click="conectar" />
-                        <div v-else class="text-lg text-white font-bold bg-green-800 py-3 px-3 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <div v-else class="text-lg text-white flex items-center font-bold bg-green-800 py-3 px-3 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
+                            conectado
                         </div>
                     </div>
                     <div class="ml-4 text-md font-semibold text-red-500" v-if="erroConexao">não foi possivel conectar</div>
@@ -35,13 +36,15 @@
                             id="ramal"
                             type="number"
                             v-model="ramal"
-                            class="w-full sm:w-3/4 mb-3 sm:mb-0"
+                            :disabled="logado"
+                            class="w-full mb-3 sm:mb-0"
                             placeholder="Digite o ramal"
                         />
                         <div class="flex space-x-4 justify-end">
                             <ag-button v-if="logado" label="Logout" @click="logout" />
                             <ag-button v-else label="Login" @click="login" />
                         </div>
+                        <span v-if="logado" class="text-green-600 font-bold ml-3 mt-1">Logado</span>
                     </div>
                 </section>
                 <section class="mb-6">
@@ -65,12 +68,13 @@
                             type="tel"
                             v-model="telefone"
                             class="w-full"
-                            :v-mask="['(##) ####-####', '(##) #####-####']"
+                            v-maska="['+55 (##) ####-####', '+55 (##) #####-####']"
+                            @maska="telefoneRaw = $event.target.dataset.maskRawValue"
                             placeholder="(XX) XXXXX-XXXX"
                         />
                         <div class="w-full flex space-x-1.5 sm:space-x-8 justify-end">
-                            <ag-button color="red" label="Desligar" />
-                            <ag-button color="green" label="Ligar" />
+                            <ag-button v-if="emLigacao" color="red" label="Desligar" @click="desligar"/>
+                            <ag-button v-else color="green" label="Discar" @click="discar" />
                         </div>
                     </div>
                 </section>
@@ -84,16 +88,17 @@ import AgButton from './components/AgButton.vue'
 import AgInput from './components/AgInput.vue'
 import ListaVazia from './components/ListaVazia.vue'
 import axios from 'axios'
-import { mask } from 'vue-the-mask'
+import { maska } from 'maska'
 
 export default {
     components: { AgButton, AgInput, ListaVazia },
-    directives: { mask },
+    directives: { maska },
     name: 'App',
     data() {
         return {
             ramal: '',
             telefone: '',
+            telefoneRaw: '',
             host: '',
             conectado: false,
             erroConexao: false,
@@ -101,6 +106,7 @@ export default {
             erroLogin: false,
             pausado: false,
             erroPausa: false,
+            emLigacao: false,
             motivosPausa: [],
             campanhas: []
         }
@@ -162,6 +168,7 @@ export default {
                 },
                 method: 'GET'
             }).then(() => {
+                console.log('deu certo o logout')
                 this.logado = false
                 this.motivosPausa = []
             }).catch(error => {
@@ -189,6 +196,27 @@ export default {
         },
         despausar () {
             console.log('despausar não implementada')
+        },
+        discar () {
+            axios.request({
+                url: `${this.host}/Discar`,
+                params: {
+                    ramal: this.ramal,
+                    numero: this.telefoneRaw,
+                    idCrm: 42
+                },
+                method: 'GET'
+            }).then(() => {
+                console.log('discandooo')
+                this.emLigacao = true
+            }).catch(error => {
+                console.log(error)
+                this.emLigacao = false
+            })
+        },
+        desligar () {
+            console.log('discandooo')
+            this.emLigacao = false
         }
     }
 }

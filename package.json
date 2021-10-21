@@ -8,7 +8,7 @@
     "dependencies": {
         "@vitejs/plugin-vue": "^1.9.3",
         "axios": "^0.23.0",
-        "v-mask": "^2.3.0",
+        "maska": "^1.4.6",
         "vue": "^3.2.20"
     },
     "devDependencies": {
