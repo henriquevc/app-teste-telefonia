@@ -192,7 +192,21 @@ export default {
             })
         },
         pausar (pausaId) {
-            console.log(pausaId)
+            axios.request({
+                url: `${this.host}/Pausar`,
+                params: {
+                    ramal: this.ramal,
+                    idMotivoPausa: pausaId
+                },
+                method: 'GET'
+            }).then(response => {
+                this.pausado = true
+                console.log(response)
+            })
+            .catch(error => {
+                this.pausado = false
+                console.log(error)
+            })
         },
         despausar () {
             console.log('despausar não implementada')
@@ -217,7 +231,8 @@ export default {
         desligar () {
             console.log('discandooo')
             this.emLigacao = false
-        }
+        },
+
     }
 }
 </script>
