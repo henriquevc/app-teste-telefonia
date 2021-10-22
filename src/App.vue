@@ -20,13 +20,30 @@
                 </section>
                 <section class="mb-6">
                     <h2 class="text-3xl font-medium">Campanhas</h2>
-                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1 divide-y">
-                        <div v-if="campanhas && campanhas.length">
-                            <div v-for="(campanha, index) in campanhas" :key="index" class="text-lg py-4 px-2 font-semibold text-gray-800" :class="{'text-opacity-30': campanha.Ativa}">
-                                {{campanha.Id}} - {{campanha.Nome}}
+                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
+                        <div v-if="campanhas && campanhas.length" class="divide-y">
+                            <div v-for="(campanha, index) in campanhas" :key="index" class="text-lg py-4 px-2 font-semibold text-gray-800" :class="{'text-opacity-30': !campanha.Ativa}">
+                                <div>{{campanha.Id}} - {{campanha.Nome}}</div>
                             </div>
                         </div>
                         <lista-vazia v-else mensagem="esperando conectar host" />
+                    </div>
+                </section>
+                <section class="mb-6">
+                    <h2 class="text-3xl font-medium">Listar tabulações</h2>
+                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <ag-input v-model="campanhaId" id="campanhaId" type="tel" placeholder="Digite o ID da campanha" />
+                                <ag-button label="Buscar" @click="listarTabulacoes" l />
+                            </div>
+                            <div v-if="tabulacoes && tabulacoes.length" class="divide-y mt-4">
+                                <div v-for="(tabulacao, index) in tabulacoes" :key="index" class="text-lg py-4 px-2 font-semibold flex items-center justify-between">
+                                    <div>{{tabulacao.Id}} - {{tabulacao.Nome}}</div>
+                                </div>
+                            </div>
+                            <lista-vazia v-else mensagem="lista de tabulações vazia" />
+                        </div>
                     </div>
                 </section>
                 <section class="mb-6">
@@ -51,9 +68,18 @@
                     <h2 class="text-3xl font-medium">Motivos de pausa</h2>
                     <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
                         <div v-if="motivosPausa && motivosPausa.length" class="divide-y">
-                            <div v-for="(motivo, index) in motivosPausa" :key="index" class="text-lg py-4 px-2 font-semibold flex items-center justify-between">
-                                <span>{{motivo.Nome}}</span>
-                                <ag-button v-if="!pausado" label="Pausar" @click="pausar(motivo.Id)" />
+                            <div v-if="pausado" class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs opacity-70">Ramal pausado em:</span>
+                                    <p class="text-2xl font-semibold">{{motivoPausado.Nome}}</p>
+                                </div>
+                                <ag-button label="Tirar da pausa" @click="despausar"/>
+                            </div>
+                            <div v-if="!pausado">
+                                <div v-for="(motivo, index) in motivosPausa" :key="index" class="text-lg py-4 px-2 font-semibold flex items-center justify-between">
+                                    <span>{{motivo.Id}} - {{motivo.Nome}}</span>
+                                    <ag-button label="Pausar" @click="pausar(motivo.Id)" />
+                                </div>
                             </div>
                         </div>
                         <lista-vazia v-else mensagem="lista de motivos de pausa vazia" />
@@ -96,10 +122,11 @@ export default {
     name: 'App',
     data() {
         return {
-            ramal: '',
+            host: 'https://a654-186-230-40-78.ngrok.io/',
+            ramal: '3632',
+            campanhaId: '',
             telefone: '',
             telefoneRaw: '',
-            host: '',
             conectado: false,
             erroConexao: false,
             logado: false,
@@ -108,7 +135,17 @@ export default {
             erroPausa: false,
             emLigacao: false,
             motivosPausa: [],
-            campanhas: []
+            campanhas: [],
+            tabulacoes: [],
+            motivoPausado: {}
+        }
+    },
+    mounted () {
+        if (this.host) {
+            this.conectar()
+        }
+        if (this.ramal) {
+            this.login()
         }
     },
     methods: {
@@ -144,7 +181,7 @@ export default {
                 params: {
                     ramal: this.ramal
                 },
-                method: 'GET'
+                method: 'POST'
             }).then(() => {
                 this.logado = true
                 this.listarMotivosPausa()
@@ -166,7 +203,7 @@ export default {
                 params: {
                     ramal: this.ramal
                 },
-                method: 'GET'
+                method: 'POST'
             }).then(() => {
                 console.log('deu certo o logout')
                 this.logado = false
@@ -191,17 +228,33 @@ export default {
                 console.log(error)
             })
         },
-        pausar (pausaId) {
+        listarTabulacoes () {
+            this.tabulacoes = []
+            axios.request({
+                url: `${this.host}/ListarTiposTabulacao`,
+                params: {
+                    campanha: this.campanhaId
+                },
+                method: 'GET'
+            }).then(response => {
+                this.tabulacoes = response.data
+            }).catch(error => {
+                console.log(error)
+            })
+        },
+        pausar (pausaId, excecaoRetornoPausa = false) {
             axios.request({
                 url: `${this.host}/Pausar`,
                 params: {
                     ramal: this.ramal,
                     idMotivoPausa: pausaId
                 },
-                method: 'GET'
+                method: 'POST'
             }).then(response => {
-                this.pausado = true
-                console.log(response)
+                if (!excecaoRetornoPausa) {
+                    this.pausado = true
+                }
+                this.motivoPausado = this.motivosPausa.find(mp => mp.Id === pausaId)
             })
             .catch(error => {
                 this.pausado = false
@@ -209,7 +262,21 @@ export default {
             })
         },
         despausar () {
-            console.log('despausar não implementada')
+             axios.request({
+                url: `${this.host}/RetornarPausa`,
+                params: {
+                    ramal: this.ramal
+                },
+                method: 'POST'
+            }).then(response => {
+                this.pausado = false
+                this.pausar(109, true)
+                console.log(response)
+            })
+            .catch(error => {
+                this.pausado = true
+                console.log(error)
+            })
         },
         discar () {
             axios.request({
@@ -219,7 +286,7 @@ export default {
                     numero: this.telefoneRaw,
                     idCrm: 42
                 },
-                method: 'GET'
+                method: 'POST'
             }).then(() => {
                 console.log('discandooo')
                 this.emLigacao = true
@@ -229,10 +296,21 @@ export default {
             })
         },
         desligar () {
-            console.log('discandooo')
+             axios.request({
+                url: `${this.host}/Desligar`,
+                params: {
+                    ramal: this.ramal
+                },
+                method: 'POST'
+            }).then(() => {
+                console.log('desligou')
+                this.emLigacao = false
+            }).catch(error => {
+                console.log(error)
+                this.emLigacao = true
+            })
             this.emLigacao = false
-        },
-
+        }
     }
 }
 </script>
