@@ -98,9 +98,38 @@
                             @maska="telefoneRaw = $event.target.dataset.maskRawValue"
                             placeholder="(XX) XXXXX-XXXX"
                         />
+
                         <div class="w-full flex space-x-1.5 sm:space-x-8 justify-end">
-                            <ag-button v-if="emLigacao" color="red" label="Desligar" @click="desligar"/>
-                            <ag-button v-else color="green" label="Discar" @click="discar" />
+                            <div v-if="discando" class="text-lg font-bold">Discando...</div>
+                            <div v-if="!discando">
+                                <ag-button v-if="emLigacao" color="red" label="Desligar" @click="desligar"/>
+                                <ag-button v-if="!emLigacao" color="green" label="Discar" @click="discar" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="mb-6">
+                    <h2 class="text-3xl font-medium">Relatório de chamadas</h2>
+                    <div
+                        class="border rounded-xl px-4 sm:px-8 py-6 my-3 space-y-4"
+                    >
+                        <span>Telefones de filtro para o relatório:</span>
+                        <div v-for="(item, index) in telefones" :key="index" class="flex space-x-2">
+                            <ag-input
+                                type="tel"
+                                v-model="item.telefone"
+                                class="w-full"
+                                v-maska="['+55 (##) ####-####', '+55 (##) #####-####']"
+                                @maska="item.telefoneRaw = $event.target.dataset.maskRawValue"
+                                placeholder="(XX) XXXXX-XXXX"
+                            />
+                            <ag-button remove flat color="red" @click="removeTelefone(index)" />
+                        </div>
+                        <div class="flex justify-end">
+                            <ag-button label="adicionar telefone" @click="addTelefone" />
+                        </div>
+                        <div class="w-full mt-8 flex space-x-1.5 sm:space-x-8 justify-end">
+                            <ag-button label="Extrair relatório" @click="extrarRelatorioChamadas"/>
                         </div>
                     </div>
                 </section>
@@ -122,11 +151,14 @@ export default {
     name: 'App',
     data() {
         return {
-            host: 'https://a654-186-230-40-78.ngrok.io/',
-            ramal: '3632',
+            host: import.meta.env.VITE_HOST,
+            ramal: import.meta.env.VITE_RAMAL,
             campanhaId: '',
             telefone: '',
             telefoneRaw: '',
+            telefones: [
+                {telefone: '', telefoneRaw: ''}
+            ],
             conectado: false,
             erroConexao: false,
             logado: false,
@@ -134,6 +166,7 @@ export default {
             pausado: false,
             erroPausa: false,
             emLigacao: false,
+            discando: false,
             motivosPausa: [],
             campanhas: [],
             tabulacoes: [],
@@ -172,7 +205,7 @@ export default {
                 })
                 .catch(error => {
                     this.campanhas = []
-                    console.log(error)
+                    console.error(error)
                 })
         },
         login () {
@@ -194,7 +227,7 @@ export default {
                 //     {Id: 3, Nome: 'Lanche'},
                 //     {Id: 4, Nome: 'F1'}
                 // ]
-                console.log(error)
+                console.error(error)
             })
         },
         logout () {
@@ -205,12 +238,11 @@ export default {
                 },
                 method: 'POST'
             }).then(() => {
-                console.log('deu certo o logout')
                 this.logado = false
                 this.motivosPausa = []
             }).catch(error => {
                 this.logado = true
-                console.log(error)
+                console.error(error)
             })
         },
         listarMotivosPausa () {
@@ -225,7 +257,7 @@ export default {
             })
             .catch(error => {
                 this.motivosPausa = []
-                console.log(error)
+                console.error(error)
             })
         },
         listarTabulacoes () {
@@ -239,7 +271,7 @@ export default {
             }).then(response => {
                 this.tabulacoes = response.data
             }).catch(error => {
-                console.log(error)
+                console.error(error)
             })
         },
         pausar (pausaId, excecaoRetornoPausa = false) {
@@ -258,7 +290,7 @@ export default {
             })
             .catch(error => {
                 this.pausado = false
-                console.log(error)
+                console.error(error)
             })
         },
         despausar () {
@@ -268,17 +300,17 @@ export default {
                     ramal: this.ramal
                 },
                 method: 'POST'
-            }).then(response => {
+            }).then(() => {
                 this.pausado = false
                 this.pausar(109, true)
-                console.log(response)
             })
             .catch(error => {
                 this.pausado = true
-                console.log(error)
+                console.error(error)
             })
         },
         discar () {
+            this.discando = true
             axios.request({
                 url: `${this.host}/Discar`,
                 params: {
@@ -288,11 +320,12 @@ export default {
                 },
                 method: 'POST'
             }).then(() => {
-                console.log('discandooo')
                 this.emLigacao = true
             }).catch(error => {
-                console.log(error)
+                console.error(error)
                 this.emLigacao = false
+            }).finally(() => {
+                this.discando = false
             })
         },
         desligar () {
@@ -303,13 +336,32 @@ export default {
                 },
                 method: 'POST'
             }).then(() => {
-                console.log('desligou')
                 this.emLigacao = false
             }).catch(error => {
-                console.log(error)
+                console.error(error)
                 this.emLigacao = true
             })
             this.emLigacao = false
+        },
+        addTelefone () {
+            this.telefones.push({telefone: '', telefoneRaw: ''})
+        },
+        removeTelefone (index) {
+            this.telefones.splice(index, 1)
+        },
+        extrarRelatorioChamadas () {
+            let numeros = this.telefones.map(tel => tel.telefoneRaw).join(';')
+            window.open(`${this.host}/relatorio/chamadas?numeros=${numeros}`, '_blank')
+            // axios.request({
+            //     url: `${this.host}/Relatorio/Chamadas`,
+            //     params: {
+            //         numeros: numeros
+            //     },
+            //     method: 'GET'
+            // }).then(response => {
+            // }).catch(error => {
+            //     console.error(error)
+            // })
         }
     }
 }
