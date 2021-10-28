@@ -70,7 +70,7 @@
                         <div v-if="motivosPausa && motivosPausa.length" class="divide-y">
                             <div v-if="pausado" class="flex items-center justify-between">
                                 <div>
-                                    <span class="text-xs opacity-70">Ramal pausado em:</span>
+                                    <span class="text-sm opacity-70">Ramal pausado em:</span>
                                     <p class="text-2xl font-semibold">{{motivoPausado.Nome}}</p>
                                 </div>
                                 <ag-button label="Tirar da pausa" @click="despausar"/>
@@ -111,25 +111,98 @@
                 <section class="mb-6">
                     <h2 class="text-3xl font-medium">Relatório de chamadas</h2>
                     <div
-                        class="border rounded-xl px-4 sm:px-8 py-6 my-3 space-y-4"
+                        class="border rounded-xl px-4 sm:px-8 py-6 my-3 divide-y"
                     >
-                        <span>Telefones de filtro para o relatório:</span>
-                        <div v-for="(item, index) in telefones" :key="index" class="flex space-x-2">
-                            <ag-input
-                                type="tel"
-                                v-model="item.telefone"
-                                class="w-full"
-                                v-maska="['+55 (##) ####-####', '+55 (##) #####-####']"
-                                @maska="item.telefoneRaw = $event.target.dataset.maskRawValue"
-                                placeholder="(XX) XXXXX-XXXX"
-                            />
-                            <ag-button remove flat color="red" @click="removeTelefone(index)" />
+                        <div>
+                            <span>Telefones de filtro para o relatório:</span>
+                            <div v-for="(item, index) in telefones" :key="index" class="flex space-x-2 mt-2">
+                                <ag-input
+                                    type="tel"
+                                    v-model="item.telefone"
+                                    class="w-full"
+                                    v-maska="['+55 (##) ####-####', '+55 (##) #####-####']"
+                                    @maska="item.telefoneRaw = $event.target.dataset.maskRawValue"
+                                    placeholder="(XX) XXXXX-XXXX"
+                                />
+                                <ag-button remove flat color="red" @click="removeTelefone(index)" />
+                            </div>
+                            <div class="flex justify-end my-4">
+                                <ag-button label="adicionar telefone" @click="addTelefone" />
+                            </div>
                         </div>
-                        <div class="flex justify-end">
-                            <ag-button label="adicionar telefone" @click="addTelefone" />
+                        <div class="flex space-x-1.5 sm:space-x-8 justify-end pt-8" >
+                            <ag-button label="relatório simplificado" @click="extrairRelatorioChamadasSimplificado"/>
+                            <ag-button label="relatório completo" @click="extrairRelatorioChamadasCompleto"/>
                         </div>
-                        <div class="w-full mt-8 flex space-x-1.5 sm:space-x-8 justify-end">
-                            <ag-button label="Extrair relatório" @click="extrarRelatorioChamadas"/>
+                        <div class="fixed top-0 left-0 w-screen h-screen flex items-center justify-center" v-if="modalRelatorioCompleto">
+                            <div class="bg-white w-full h-full p-12 overflow-auto"> 
+                                <div class="text-2xl mb-8 flex justify-between items-center">
+                                    Relatório de chamadas
+                                    <ag-button label="X" @click="modalRelatorioCompleto = false" flat />
+                                </div>
+                                <table class="table-auto border border-collapse w-full">
+                                    <thead>
+                                        <tr>
+                                            <th class="border px-2">Id</th>
+                                            <th class="border px-2">Identificador Gravação</th>
+                                            <th class="border px-2">Tipo</th>
+                                            <th class="border px-2">Status</th>
+                                            <th class="border px-2">Data</th>
+                                            <th class="border px-2">Origem</th>
+                                            <th class="border px-2">Destino</th>
+                                            <th class="border px-2">Duração Atendimento</th>
+                                            <th class="border px-2">Duração Ligação</th>
+                                            <th class="border px-2">Usuário</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(item, index) in relatorioChamadas" :key="index">
+                                            <td class="border px-2">{{item.Id}}</td>
+                                            <td class="border px-2">{{item.IdentificadorGravacao}}</td>
+                                            <td class="border px-2">{{item.Tipo}}</td>
+                                            <td class="border px-2">{{item.Status}}</td>
+                                            <td class="border px-2">{{item.Data}}</td>
+                                            <td class="border px-2">{{item.Origem}}</td>
+                                            <td class="border px-2">{{item.Destino}}</td>
+                                            <td class="border px-2">{{item.DuracaoAtendimento}}</td>
+                                            <td class="border px-2">{{item.DuracaoLigacao}}</td>
+                                            <td class="border px-2">{{item.Usuario}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-8 px-4 divide-y">
+
+                            <div v-for="(item, index) in relatorioChamadas" :key="index" class="pt-4">
+                                <div class="w-full flex flex-wrap mb-1 items-start">
+                                    <div class="w-full text-sm text-gray-800 font-semibold">{{item.Data}}</div>
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Origem</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.Origem}}</div>
+                                    </div>
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Destino</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.Destino}}</div>
+                                    </div>
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Duração Atendimento</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.DuracaoAtendimento}}</div>
+                                    </div>
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Usuário</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.Usuario}}</div>
+                                    </div>        
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Status</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.Status}}</div>
+                                    </div>
+                                    <div class="w-4/12 mt-1">
+                                        <div class="text-sm text-gray-400">Duração Ligação</div>
+                                        <div class="text-gray-800 text-lg font-semibold">{{item.DuracaoLigacao}}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -168,9 +241,11 @@ export default {
             emLigacao: false,
             discando: false,
             motivosPausa: [],
+            motivoPausado: {},
             campanhas: [],
             tabulacoes: [],
-            motivoPausado: {}
+            relatorioChamadas: [],
+            modalRelatorioCompleto: false
         }
     },
     mounted () {
@@ -349,19 +424,39 @@ export default {
         removeTelefone (index) {
             this.telefones.splice(index, 1)
         },
-        extrarRelatorioChamadas () {
+        extrairRelatorioChamadasSimplificado () {
+            this.buscarRelatorio()
+                .then(response => {
+                    this.relatorioChamadas = response.data
+                    this.modalRelatorioCompleto = false
+                }).catch(error => {
+                    console.error(error)
+                })
+        },
+        extrairRelatorioChamadasCompleto () {
+            this.buscarRelatorio()
+                .then(response => {
+                    this.relatorioChamadas = response.data
+                    this.modalRelatorioCompleto = true
+                }).catch(error => {
+                    console.error(error)
+                })
+        },
+        async buscarRelatorio () {
             let numeros = this.telefones.map(tel => tel.telefoneRaw).join(';')
-            window.open(`${this.host}/relatorio/chamadas?numeros=${numeros}`, '_blank')
-            // axios.request({
-            //     url: `${this.host}/Relatorio/Chamadas`,
-            //     params: {
-            //         numeros: numeros
-            //     },
-            //     method: 'GET'
-            // }).then(response => {
-            // }).catch(error => {
-            //     console.error(error)
-            // })
+            return new Promise((resolve, reject) => {
+                axios.request({
+                    url: `${this.host}/Relatorio/Chamadas`,
+                    params: {
+                        numeros: numeros
+                    },
+                    method: 'GET'
+                }).then(response => {
+                    resolve(response)
+                }).catch(error => {
+                    reject(error)
+                })
+            })
         }
     }
 }

@@ -18,7 +18,6 @@ export default {
             default: 'text'
         },
         modelValue: {
-            type: String,
             required: true
         },
         id: {
