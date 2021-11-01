@@ -7,7 +7,10 @@
             <main>
                 <section class="mb-6 border rounded-xl px-4 py-8">
                     <div class="flex items-center space-x-4 justify-between">
-                        <ag-input v-model="host" type="url" :disabled="conectado" placeholder="Digite o host" class="w-full" id="host"/>
+						<div class="space-y-4">
+							<ag-input v-model="host" type="url" :disabled="conectado" placeholder="Digite o host" class="w-full" id="host"/>
+							<!-- <ag-input v-model="ramal" type="tel" :disabled="logado" placeholder="Digite o identificador" class="w-full" id="host"/> -->
+						</div>
                         <ag-button v-if="!conectado" label="Conectar" @click="conectar" />
                         <div v-else class="text-lg text-white flex items-center font-bold bg-green-800 py-3 px-3 rounded-full">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -58,8 +61,8 @@
                             placeholder="Digite o ramal"
                         />
                         <div class="flex space-x-4 justify-end">
-                            <ag-button v-if="logado" label="Logout" @click="logout" />
-                            <ag-button v-else label="Login" @click="login" />
+                            <ag-button label="Logout" @click="logout" />
+                            <ag-button label="Login" @click="login" />
                         </div>
                         <span v-if="logado" class="text-green-600 font-bold ml-3 mt-1">Logado</span>
                     </div>
@@ -131,8 +134,8 @@
                             </div>
                         </div>
                         <div class="flex space-x-1.5 sm:space-x-8 justify-end pt-8" >
-                            <ag-button label="relatório simplificado" @click="extrairRelatorioChamadasSimplificado"/>
-                            <ag-button label="relatório completo" @click="extrairRelatorioChamadasCompleto"/>
+                            <ag-button :disable="buscandoRelatorioSimplificado" :label="buscandoRelatorioSimplificado ? 'buscando...' : 'relatório simplificado'" @click="extrairRelatorioChamadasSimplificado"/>
+                            <ag-button :disable="buscandoRelatorioCompleto" :label="buscandoRelatorioCompleto ? 'buscando...' : 'relatório completo'" @click="extrairRelatorioChamadasCompleto"/>
                         </div>
                         <div class="fixed top-0 left-0 w-screen h-screen flex items-center justify-center" v-if="modalRelatorioCompleto">
                             <div class="bg-white w-full h-full p-12 overflow-auto"> 
@@ -235,6 +238,7 @@ export default {
             conectado: false,
             erroConexao: false,
             logado: false,
+			identificador: '',
             erroLogin: false,
             pausado: false,
             erroPausa: false,
@@ -245,7 +249,9 @@ export default {
             campanhas: [],
             tabulacoes: [],
             relatorioChamadas: [],
-            modalRelatorioCompleto: false
+            modalRelatorioCompleto: false,
+            buscandoRelatorioSimplificado: false,
+            buscandoRelatorioCompleto: false
         }
     },
     mounted () {
@@ -263,7 +269,7 @@ export default {
             }
             this.erroConexao = false
             axios.get(this.host)
-                .then(response => {
+                .then(() => {
                     this.conectado = true
                     this.erroConexao = false
                     this.listarCampanhas()
@@ -287,44 +293,39 @@ export default {
             axios.request({
                 url: `${this.host}/Login`,
                 params: {
-                    ramal: this.ramal
+                    identificador: this.ramal
                 },
                 method: 'POST'
-            }).then(() => {
+            }).then(response => {
+				this.identificador = response.data.identificador
                 this.logado = true
                 this.listarMotivosPausa()
             }).catch(error => {
                 this.logado = false
-                // this.motivosPausa = [
-                //     {Id: 0, Nome: 'Banheiro'},
-                //     {Id: 1, Nome: 'Almoço'},
-                //     {Id: 2, Nome: 'Reunião'},
-                //     {Id: 3, Nome: 'Lanche'},
-                //     {Id: 4, Nome: 'F1'}
-                // ]
-                console.error(error)
+                console.error(error.response.data)
             })
         },
         logout () {
             axios.request({
                 url: `${this.host}/Logout`,
-                params: {
-                    ramal: this.ramal
+                headers: {
+                	identificador: this.identificador | this.ramal
                 },
                 method: 'POST'
             }).then(() => {
                 this.logado = false
                 this.motivosPausa = []
+				console.log('deslogado')
             }).catch(error => {
                 this.logado = true
-                console.error(error)
+                console.error(error.response.data)
             })
         },
         listarMotivosPausa () {
             axios.request({
                 url: `${this.host}/ListarMotivosPausa`,
-                params: {
-                    ramal: this.ramal
+                headers: {
+					identificador: this.identificador
                 },
                 method: 'GET'
             }).then(response => {
@@ -425,24 +426,30 @@ export default {
             this.telefones.splice(index, 1)
         },
         extrairRelatorioChamadasSimplificado () {
+            this.buscandoRelatorioSimplificado = true
             this.buscarRelatorio()
                 .then(response => {
                     this.relatorioChamadas = response.data
                     this.modalRelatorioCompleto = false
                 }).catch(error => {
                     console.error(error)
+                }).finally(() => {
+                    this.buscandoRelatorioSimplificado = false
                 })
         },
         extrairRelatorioChamadasCompleto () {
+            this.buscandoRelatorioCompleto = true
             this.buscarRelatorio()
                 .then(response => {
                     this.relatorioChamadas = response.data
                     this.modalRelatorioCompleto = true
                 }).catch(error => {
                     console.error(error)
+                }).finally(() => {
+                    this.buscandoRelatorioCompleto = false
                 })
         },
-        async buscarRelatorio () {
+        buscarRelatorio () {
             let numeros = this.telefones.map(tel => tel.telefoneRaw).join(';')
             return new Promise((resolve, reject) => {
                 axios.request({
