@@ -7,10 +7,8 @@
             <main>
                 <section class="mb-6 border rounded-xl px-4 py-8">
                     <div class="flex items-center space-x-4 justify-between">
-						<div class="space-y-4">
 							<ag-input v-model="host" type="url" :disabled="conectado" placeholder="Digite o host" class="w-full" id="host"/>
 							<!-- <ag-input v-model="ramal" type="tel" :disabled="logado" placeholder="Digite o identificador" class="w-full" id="host"/> -->
-						</div>
                         <ag-button v-if="!conectado" label="Conectar" @click="conectar" />
                         <div v-else class="text-lg text-white flex items-center font-bold bg-green-800 py-3 px-3 rounded-full">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -22,14 +20,36 @@
                     <div class="ml-4 text-md font-semibold text-red-500" v-if="erroConexao">não foi possivel conectar</div>
                 </section>
                 <section class="mb-6">
+                    <h2 class="text-3xl font-medium">Login no ramal</h2>
+                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 flex justify-between items-center grid grid-cols-1 sm:grid-cols-2">
+                        <ag-input
+                            id="ramal"
+                            type="text"
+                            v-model="ramal"
+                            :disabled="logado"
+                            class="w-full mb-3 sm:mb-0"
+                            placeholder="Digite o ramal"
+                        />
+                        <div class="flex space-x-4 justify-end">
+                            <ag-button label="Logout" @click="logout" />
+                            <ag-button label="Login" @click="login" />
+                        </div>
+                        <span v-if="logado" class="text-green-600 font-bold ml-3 mt-1">Logado</span>
+                    </div>
+                </section>
+                <section class="mb-6">
                     <h2 class="text-3xl font-medium">Campanhas</h2>
                     <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
                         <div v-if="campanhas && campanhas.length" class="divide-y">
-                            <div v-for="(campanha, index) in campanhas" :key="index" class="text-lg py-4 px-2 font-semibold text-gray-800" :class="{'text-opacity-30': !campanha.Ativa}">
-                                <div>{{campanha.Id}} - {{campanha.Nome}}</div>
+                            <div v-for="(campanha, index) in campanhas" :key="index" class="flex items-center justify-between py-4 px-2 text-gray-800" :class="{'text-opacity-30': !campanha.Ativa}">
+                                <div class="text-lg font-semibold">{{campanha.Id}} - {{campanha.Nome}}</div>
+                                <div class="space-x-4">
+                                    <ag-button label="Logout" flat color="red" @click="logoutCampanha"/>
+                                    <ag-button label="Login" @click="loginCampanha"/>
+                                </div>
                             </div>
                         </div>
-                        <lista-vazia v-else mensagem="esperando conectar host" />
+                        <lista-vazia v-else mensagem="lista de campanhas vazia" />
                     </div>
                 </section>
                 <section class="mb-6">
@@ -47,24 +67,6 @@
                             </div>
                             <lista-vazia v-else mensagem="lista de tabulações vazia" />
                         </div>
-                    </div>
-                </section>
-                <section class="mb-6">
-                    <h2 class="text-3xl font-medium">Login no ramal</h2>
-                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 flex justify-between items-center grid grid-cols-1 sm:grid-cols-2">
-                        <ag-input
-                            id="ramal"
-                            type="number"
-                            v-model="ramal"
-                            :disabled="logado"
-                            class="w-full mb-3 sm:mb-0"
-                            placeholder="Digite o ramal"
-                        />
-                        <div class="flex space-x-4 justify-end">
-                            <ag-button label="Logout" @click="logout" />
-                            <ag-button label="Login" @click="login" />
-                        </div>
-                        <span v-if="logado" class="text-green-600 font-bold ml-3 mt-1">Logado</span>
                     </div>
                 </section>
                 <section class="mb-6">
@@ -176,10 +178,10 @@
                             </div>
                         </div>
                         <div class="mt-8 px-4 divide-y">
-
                             <div v-for="(item, index) in relatorioChamadas" :key="index" class="pt-4">
                                 <div class="w-full flex flex-wrap mb-1 items-start">
-                                    <div class="w-full text-sm text-gray-800 font-semibold">{{item.Data}}</div>
+                                    <div class="w-1/2 text-sm text-gray-400 font-semibold">{{item.Id}}</div>
+                                    <div class="w-1/2 text-sm text-gray-800 font-semibold text-right">{{item.Data}}</div>
                                     <div class="w-4/12 mt-1">
                                         <div class="text-sm text-gray-400">Origem</div>
                                         <div class="text-gray-800 text-lg font-semibold">{{item.Origem}}</div>
@@ -209,6 +211,16 @@
                         </div>
                     </div>
                 </section>
+                <section class="mb-6">
+                    <h2 class="text-3xl font-medium">Download Gravação</h2>
+                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
+                        <div class="flex items-center justify-between space-x-4">
+                            <ag-input type="text" v-model="idGravacao" placeholder="digite o id da ligação" class="w-full"/>
+                            <ag-button label="Download" @click="downloadGravacao"/>
+                            <a ref="downloadGravacao" :download="`rec-${idGravacao}.mp3`" v-show="false" :href="link"></a>
+                        </div>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
@@ -229,6 +241,7 @@ export default {
         return {
             host: import.meta.env.VITE_HOST,
             ramal: import.meta.env.VITE_RAMAL,
+            senha: import.meta.env.VITE_SENHA,
             campanhaId: '',
             telefone: '',
             telefoneRaw: '',
@@ -251,15 +264,14 @@ export default {
             relatorioChamadas: [],
             modalRelatorioCompleto: false,
             buscandoRelatorioSimplificado: false,
-            buscandoRelatorioCompleto: false
+            buscandoRelatorioCompleto: false,
+            idGravacao: '19712512',
+            link: ''
         }
     },
     mounted () {
         if (this.host) {
             this.conectar()
-        }
-        if (this.ramal) {
-            this.login()
         }
     },
     methods: {
@@ -272,36 +284,59 @@ export default {
                 .then(() => {
                     this.conectado = true
                     this.erroConexao = false
-                    this.listarCampanhas()
+                    if (this.ramal) {
+                        this.login()
+                    }
                 }).catch(error => {
                     console.error(error)
                     this.conectado = false
                     this.erroConexao = true
                 })
         },
-        listarCampanhas () {
-            axios.get(`${this.host}/ListarCampanhas`)
-                .then(response => {
-                    this.campanhas = response.data
-                })
-                .catch(error => {
-                    this.campanhas = []
-                    console.error(error)
-                })
+        loginCampanha () {
+            axios.request({
+                url: `${this.host}/LoginCampanha`,
+                headers: {
+                    identificador: this.identificador
+                },
+                method: 'POST'
+            }).then(response => {
+                console.log(response, 'login na campanha com sucesso')
+            }).catch(error => {
+                console.log(error)
+            })
+        },
+        logoutCampanha () {
+            axios.request({
+                url: `${this.host}/LogoutCampanha`,
+                headers: {
+                    identificador: this.identificador
+                },
+                method: 'POST'
+            }).then(response => {
+                console.log(response, 'ok')
+            }).catch(error => {
+                console.log(response)
+            })
         },
         login () {
             axios.request({
                 url: `${this.host}/Login`,
                 params: {
-                    identificador: this.ramal
+                    identificador: this.ramal,
+                    senha: this.senha | ''
                 },
                 method: 'POST'
             }).then(response => {
 				this.identificador = response.data.identificador
                 this.logado = true
-                this.listarMotivosPausa()
+                if (this.identificador) {
+                    this.listarCampanhas()
+                    this.listarMotivosPausa()
+                }
             }).catch(error => {
                 this.logado = false
+                this.listarMotivosPausa()
                 console.error(error.response.data)
             })
         },
@@ -309,7 +344,7 @@ export default {
             axios.request({
                 url: `${this.host}/Logout`,
                 headers: {
-                	identificador: this.identificador | this.ramal
+                	identificador: this.identificador || this.ramal
                 },
                 method: 'POST'
             }).then(() => {
@@ -321,11 +356,26 @@ export default {
                 console.error(error.response.data)
             })
         },
+        listarCampanhas () {
+            axios.request({
+                url: `${this.host}/ListarCampanhas`,
+                headers: {
+                    identificador: this.identificador || this.ramal
+                },
+                method: 'GET'
+            }).then(response => {
+                console.log('deu certo a listagem', response)
+                this.campanhas = response.data
+            }).catch(error => {
+                this.campanhas = []
+                console.error(error)
+            })
+        },
         listarMotivosPausa () {
             axios.request({
                 url: `${this.host}/ListarMotivosPausa`,
                 headers: {
-					identificador: this.identificador
+					identificador: this.identificador || this.ramal
                 },
                 method: 'GET'
             }).then(response => {
@@ -340,6 +390,9 @@ export default {
             this.tabulacoes = []
             axios.request({
                 url: `${this.host}/ListarTiposTabulacao`,
+                headers: {
+                    identificador: this.identificador
+                },
                 params: {
                     campanha: this.campanhaId
                 },
@@ -353,12 +406,14 @@ export default {
         pausar (pausaId, excecaoRetornoPausa = false) {
             axios.request({
                 url: `${this.host}/Pausar`,
+                headers: {
+                    identificador: this.identificador | this.ramal
+                },
                 params: {
-                    ramal: this.ramal,
                     idMotivoPausa: pausaId
                 },
                 method: 'POST'
-            }).then(response => {
+            }).then(() => {
                 if (!excecaoRetornoPausa) {
                     this.pausado = true
                 }
@@ -372,8 +427,8 @@ export default {
         despausar () {
              axios.request({
                 url: `${this.host}/RetornarPausa`,
-                params: {
-                    ramal: this.ramal
+                headers: {
+                    identificador: this.identificador | this.ramal
                 },
                 method: 'POST'
             }).then(() => {
@@ -389,10 +444,12 @@ export default {
             this.discando = true
             axios.request({
                 url: `${this.host}/Discar`,
+                headers: {
+                    identificador: this.identificador | this.ramal
+                },
                 params: {
-                    ramal: this.ramal,
                     numero: this.telefoneRaw,
-                    idCrm: 42
+                    idCrm: '42'
                 },
                 method: 'POST'
             }).then(() => {
@@ -407,6 +464,9 @@ export default {
         desligar () {
              axios.request({
                 url: `${this.host}/Desligar`,
+                headers: {
+                    identificador: this.identificador | this.ramal
+                },
                 params: {
                     ramal: this.ramal
                 },
@@ -451,11 +511,14 @@ export default {
         },
         buscarRelatorio () {
             let numeros = this.telefones.map(tel => tel.telefoneRaw).join(';')
+            if (!numeros.length) {
+            }
             return new Promise((resolve, reject) => {
                 axios.request({
-                    url: `${this.host}/Relatorio/Chamadas`,
+                    url: `${this.host}/RelatorioChamadas`,
                     params: {
-                        numeros: numeros
+                        numeros: numeros,
+                        idCrm: '42'
                     },
                     method: 'GET'
                 }).then(response => {
@@ -463,6 +526,35 @@ export default {
                 }).catch(error => {
                     reject(error)
                 })
+            })
+        },
+        downloadGravacao () {
+            axios.request({
+                url: `${this.host}/DownloadGravacao`,
+                headers: {
+                    identificador: this.identificador
+                },
+                params: {
+                    idChamada: this.idGravacao
+                },
+                method: 'GET',
+                responseType: 'blob'
+            })
+            .then(response => {
+                console.log(response)
+                const blob = new Blob([response.data], {
+                    type: 'audio/wav'
+                })
+                const reader = new FileReader
+                // Add a listener to handle successful reading of the blob
+                reader.addEventListener('load', () => {
+                    this.link = reader.result
+                    console.log(this.link)
+                    if (this.link.length) {
+                        this.$refs.downloadGravacao.click()
+                    }
+                })
+                reader.readAsDataURL(blob)
             })
         }
     }
