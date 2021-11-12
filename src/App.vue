@@ -217,7 +217,6 @@
                         <div class="flex items-center justify-between space-x-4">
                             <ag-input type="text" v-model="idGravacao" placeholder="digite o id da ligação" class="w-full"/>
                             <ag-button label="Download" @click="downloadGravacao"/>
-                            <a ref="downloadGravacao" :download="`rec-${idGravacao}.mp3`" v-show="false" :href="link"></a>
                         </div>
                     </div>
                 </section>
@@ -407,7 +406,7 @@ export default {
             axios.request({
                 url: `${this.host}/Pausar`,
                 headers: {
-                    identificador: this.identificador | this.ramal
+                    identificador: this.identificador || this.ramal
                 },
                 params: {
                     idMotivoPausa: pausaId
@@ -428,7 +427,7 @@ export default {
              axios.request({
                 url: `${this.host}/RetornarPausa`,
                 headers: {
-                    identificador: this.identificador | this.ramal
+                    identificador: this.identificador || this.ramal
                 },
                 method: 'POST'
             }).then(() => {
@@ -445,7 +444,7 @@ export default {
             axios.request({
                 url: `${this.host}/Discar`,
                 headers: {
-                    identificador: this.identificador | this.ramal
+                    identificador: this.identificador || this.ramal
                 },
                 params: {
                     numero: this.telefoneRaw,
@@ -465,7 +464,7 @@ export default {
              axios.request({
                 url: `${this.host}/Desligar`,
                 headers: {
-                    identificador: this.identificador | this.ramal
+                    identificador: this.identificador || this.ramal
                 },
                 params: {
                     ramal: this.ramal
@@ -511,11 +510,13 @@ export default {
         },
         buscarRelatorio () {
             let numeros = this.telefones.map(tel => tel.telefoneRaw).join(';')
-            if (!numeros.length) {
-            }
+            console.log(this.iden)
             return new Promise((resolve, reject) => {
                 axios.request({
                     url: `${this.host}/RelatorioChamadas`,
+                    headers: {
+                        identificador: this.identificador || this.ramal
+                    },
                     params: {
                         numeros: numeros,
                         idCrm: '42'
@@ -541,18 +542,16 @@ export default {
                 responseType: 'blob'
             })
             .then(response => {
-                console.log(response)
                 const blob = new Blob([response.data], {
                     type: 'audio/wav'
                 })
                 const reader = new FileReader
                 // Add a listener to handle successful reading of the blob
                 reader.addEventListener('load', () => {
-                    this.link = reader.result
-                    console.log(this.link)
-                    if (this.link.length) {
-                        this.$refs.downloadGravacao.click()
-                    }
+                    let a = document.createElement('a')
+                    a.href = reader.result
+                    a.download = `rec-${this.idGravacao}.mp3`
+                    a.click()
                 })
                 reader.readAsDataURL(blob)
             })
