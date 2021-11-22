@@ -220,6 +220,15 @@
                         </div>
                     </div>
                 </section>
+                <section class="mb-6">
+                    <h2 class="text-3xl font-medium">Envio de malling</h2>
+                    <div class="border rounded-xl px-4 sm:px-8 py-6 my-3 grid grid-cols-1">
+                        <div class="flex items-center justify-between space-x-4">
+                            <ag-input type="file" ref="inputFile" placeholder="carregar arquivo" class="w-full" @change="selectFile"/>
+                            <ag-button label="Enviar" @click="enviarMailing"/>
+                        </div>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
@@ -265,7 +274,8 @@ export default {
             buscandoRelatorioSimplificado: false,
             buscandoRelatorioCompleto: false,
             idGravacao: '19712512',
-            link: ''
+            link: '',
+            file: null
         }
     },
     mounted () {
@@ -554,6 +564,29 @@ export default {
                     a.click()
                 })
                 reader.readAsDataURL(blob)
+            })
+        },
+        selectFile () {
+            this.file = this.$refs.inputFile.$el.files[0]
+        },
+        enviarMailing () {
+            const formData = new FormData()
+            formData.append('file', this.file)
+            axios.request({
+                url: `${this.host}/EnviarMailing`,
+                headers: {
+                    identificador: this.identificador,
+                    'Content-Type': 'multipart/form-data'
+                },
+                params: {
+                    idCampanha: 255
+                },
+                data: formData,
+                method: 'POST'
+            }).then(() => {
+                console.log('deu certo')
+            }).catch(error => {
+                console.log(error)
             })
         }
     }
