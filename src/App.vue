@@ -50,6 +50,12 @@
                             </div>
                         </div>
                         <lista-vazia v-else mensagem="lista de campanhas vazia" />
+                        <div class="border rounded-xl p-4" v-if="retornoLigacao">
+                            <div>Agendamento: {{retornoLigacao.agendamento}}</div>
+                            <div>Id CRM: {{retornoLigacao.idCrm}}</div>
+                            <div>Identificador: {{retornoLigacao.identificador}}</div>
+                            <div>Número: {{retornoLigacao.numero}}</div>
+                        </div>
                     </div>
                 </section>
                 <section class="mb-6">
@@ -274,6 +280,7 @@ export default {
             buscandoRelatorioSimplificado: false,
             buscandoRelatorioCompleto: false,
             idGravacao: '19712512',
+            retornoLigacao: null,
             link: '',
             file: null
         }
@@ -309,10 +316,27 @@ export default {
                     identificador: this.identificador
                 },
                 method: 'POST'
-            }).then(response => {
-                console.log(response, 'login na campanha com sucesso')
+            }).then(() => {
+                setInterval(() => {
+                    axios.request({
+                        url: `${this.host}/RetornaLigacao`,
+                        headers: {
+                            identificador: this.identificador
+                        },
+                        method: 'GET'
+                    }).then(response => {
+                        this.retornoLigacao = response.data
+                    }).catch(() => {
+                        this.retornoLigacao = {
+                            agendamento: null,
+                            idCrm: '2108092-1u239-23498',
+                            identificador: 'aiojaosidj',
+                            numero: '(11) 976-847-567'
+                        }
+                    })
+                }, 3 * 1000)
             }).catch(error => {
-                console.log(error)
+                console.error(error)
             })
         },
         logoutCampanha () {
